@@ -183,9 +183,9 @@ open class Renderer<P : Renderer<P>> @JvmOverloads constructor(
         this.pendingState = newState
     }
 
-    protected fun doProcessBroadcast(broadcastData: BroadcastData) {}
+    protected open fun doProcessBroadcast(broadcastData: BroadcastData) {}
 
-    override fun onProcessBroadcast(broadcastData: BroadcastData) {
+    final override fun onProcessBroadcast(broadcastData: BroadcastData) {
         for (i in 0..lastChildIndex)
             children[i]?.onProcessBroadcast(broadcastData)
         doProcessBroadcast(broadcastData)
