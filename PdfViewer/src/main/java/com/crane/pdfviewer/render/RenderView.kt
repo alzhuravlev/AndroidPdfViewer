@@ -7,6 +7,7 @@ import android.util.AttributeSet
 import android.util.Log
 import android.view.GestureDetector
 import android.view.MotionEvent
+import android.view.ScaleGestureDetector
 import android.view.View
 
 /**
@@ -17,10 +18,16 @@ class RenderView @JvmOverloads constructor(
     attrs: AttributeSet? = null,
     defStyleAttr: Int = 0
 ) :
-    View(context, attrs, defStyleAttr), GestureDetector.OnGestureListener, Broadcaster {
+    View(context, attrs, defStyleAttr),
+    GestureDetector.OnGestureListener,
+    ScaleGestureDetector.OnScaleGestureListener,
+    Broadcaster {
 
     private val gestureDetector: GestureDetector
+    private val scaleGestureDetector: ScaleGestureDetector
     private val gestureDetectorLongPress: GestureDetector
+
+    private var inScale = false
 
     private var renderer: Renderer<*> = Renderer(context, null, false, 10, false)
     private val inputController = InputController()
@@ -36,6 +43,10 @@ class RenderView @JvmOverloads constructor(
 
         gestureDetector = GestureDetector(getContext(), this)
         gestureDetector.setIsLongpressEnabled(false)
+
+        scaleGestureDetector = ScaleGestureDetector(getContext(), this)
+        scaleGestureDetector.isQuickScaleEnabled = true
+
         gestureDetectorLongPress =
             GestureDetector(getContext(), object : GestureDetector.SimpleOnGestureListener() {
                 override fun onLongPress(e: MotionEvent) {
@@ -80,12 +91,19 @@ class RenderView @JvmOverloads constructor(
 
     protected fun onExtraCanvasDrawn(extraCanvas: Canvas) {}
 
-    override fun onTouchEvent(event: MotionEvent): Boolean {
-        gestureDetector.onTouchEvent(event)
-        gestureDetectorLongPress.onTouchEvent(event)
-        if (event.action == MotionEvent.ACTION_UP)
-            inputController.postUp(event.x, event.y, event.eventTime)
+    override fun onTouchEvent(e: MotionEvent): Boolean {
+        scaleGestureDetector.onTouchEvent(e)
+        gestureDetector.onTouchEvent(e)
+        gestureDetectorLongPress.onTouchEvent(e)
+        if (e.action == MotionEvent.ACTION_UP)
+            onUp(e)
         return true
+    }
+
+    fun onUp(e: MotionEvent) {
+        if (DEBUG)
+            Log.d(TAG, "onUp")
+        inputController.postUp(e.x, e.y, e.eventTime)
     }
 
     override fun onDown(e: MotionEvent): Boolean {
@@ -113,6 +131,8 @@ class RenderView @JvmOverloads constructor(
         distanceX: Float,
         distanceY: Float
     ): Boolean {
+        if (inScale)
+            return false
         if (DEBUG)
             Log.d(TAG, "onScroll $distanceX $distanceY")
         inputController.postScroll(distanceX, distanceY, e2.x, e2.y, e2.pointerCount)
@@ -120,6 +140,8 @@ class RenderView @JvmOverloads constructor(
     }
 
     override fun onLongPress(e: MotionEvent) {
+        if (inScale)
+            return
         if (DEBUG)
             Log.d(TAG, "onLongPress")
         inputController.postLongTap(e.x, e.y)
@@ -131,6 +153,8 @@ class RenderView @JvmOverloads constructor(
         velocityX: Float,
         velocityY: Float
     ): Boolean {
+        if (inScale)
+            return false
         if (DEBUG)
             Log.d(TAG, "onFling $velocityX $velocityY")
         if (e2.pointerCount == 1)
@@ -138,11 +162,37 @@ class RenderView @JvmOverloads constructor(
         return true
     }
 
+    // ScaleGestureDetector
+
+    override fun onScale(detector: ScaleGestureDetector): Boolean {
+        if (DEBUG)
+            Log.d(TAG, "onScale ${detector.scaleFactor} ${detector.focusX} ${detector.focusY}")
+        inputController.postScale(detector.focusX, detector.focusY, detector.scaleFactor)
+        return true
+    }
+
+    override fun onScaleBegin(detector: ScaleGestureDetector): Boolean {
+        if (DEBUG)
+            Log.d(TAG, "onScaleBegin")
+        inScale = true
+        inputController.postScaleBegin()
+        return true
+    }
+
+    override fun onScaleEnd(detector: ScaleGestureDetector) {
+        if (DEBUG)
+            Log.d(TAG, "onScaleEnd")
+        inScale = false
+        inputController.postScaleEnd()
+    }
+
+    //ScaleGestureDetector
+
     open fun doProcessBroadcast(broadcastData: BroadcastData) {}
 
     override fun onProcessBroadcast(broadcastData: BroadcastData) {
         doProcessBroadcast(broadcastData)
-        renderer?.onProcessBroadcast(broadcastData)
+        renderer.onProcessBroadcast(broadcastData)
         BroadcastData.release(broadcastData)
     }
 

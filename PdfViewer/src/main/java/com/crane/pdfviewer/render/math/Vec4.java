@@ -1,6 +1,6 @@
 package com.crane.pdfviewer.render.math;
 
-public class Vec4 {
+public class  Vec4 {
     public float x, y, z, w;
 
     private static Vec4 tmp = new Vec4();

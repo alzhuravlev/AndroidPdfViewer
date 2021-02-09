@@ -11,11 +11,11 @@ import kotlin.system.measureTimeMillis
  */
 
 open class Renderer<P : Renderer<P>> @JvmOverloads constructor(
-    protected val context: Context,
-    protected val parent: P? = null,
-    protected val manualDrawing: Boolean = false,
-    protected val childApproxCount: Int = 10,
-    val sync: Boolean = false
+    private val context: Context,
+    private val parent: P? = null,
+    private val manualDrawing: Boolean = false,
+    private val childApproxCount: Int = 10,
+    private val sync: Boolean = false
 ) : Broadcaster {
 
     final override var broadcaster: Broadcaster? = null

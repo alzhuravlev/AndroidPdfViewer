@@ -1,6 +1,7 @@
 package com.crane.pdfviewer.render.math;
 
 import android.graphics.Matrix;
+import android.graphics.RectF;
 
 public class Mat4 {
     public float m00, m01, m02, m03;
@@ -304,9 +305,11 @@ public class Mat4 {
     }
 
     public Mat4 scale(float x, float y, float z) {
-        m00 *= x;
-        m11 *= y;
-        m22 *= z;
+        tmp.identity();
+        tmp.m00 = x;
+        tmp.m11 = y;
+        tmp.m22 = z;
+        dot(tmp, this, this);
         return this;
     }
 
@@ -325,6 +328,28 @@ public class Mat4 {
         tmpF[7] = m31;
         tmpF[8] = m33;
         matrix.setValues(tmpF);
+        return this;
+    }
+
+    public Mat4 mapRect(RectF dst, RectF src) {
+        tmpVec4.x = src.left;
+        tmpVec4.y = src.top;
+        tmpVec4.z = 0.0f;
+        tmpVec4.w = 1.0f;
+        tmpVec4.dot(this);
+
+        dst.left = tmpVec4.x / tmpVec4.w;
+        dst.top = tmpVec4.y / tmpVec4.w;
+
+        tmpVec4.x = src.right;
+        tmpVec4.y = src.bottom;
+        tmpVec4.z = 0.0f;
+        tmpVec4.w = 1.0f;
+        tmpVec4.dot(this);
+
+        dst.right = tmpVec4.x / tmpVec4.w;
+        dst.bottom = tmpVec4.y / tmpVec4.w;
+
         return this;
     }
 

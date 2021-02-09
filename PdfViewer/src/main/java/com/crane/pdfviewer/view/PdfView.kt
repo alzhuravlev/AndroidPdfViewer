@@ -18,10 +18,8 @@ class PdfView @JvmOverloads constructor(
 ) : FrameLayout(context, attrs, defStyleAttr) {
 
     private val renderView = RenderView(context)
-    private val pdfRenderer = PdfRenderer(context)
 
     init {
-        renderView.setRenderer(PdfRenderer(context))
         addView(
             renderView,
             LayoutParams(
@@ -43,8 +41,8 @@ class PdfView @JvmOverloads constructor(
     override fun removeAllViews() =
         throw IllegalStateException("Unable to remove views from this group!")
 
-    fun loadPdf(file: File) {
-        renderView.sendBroadcast(BroadcastData.obtain(BROADCAST_LOAD_PDF, file))
+    fun loadPdf(file: File, defaultPageIndexToView: Int = -1) {
+        renderView.setRenderer(PdfRenderer(context, file))
     }
 
     companion object {
